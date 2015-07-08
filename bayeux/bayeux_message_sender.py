@@ -7,6 +7,7 @@ from twisted.web.client import Agent, HTTPConnectionPool
 from twisted.web.http_headers import Headers
 from twisted.web.iweb import IBodyProducer
 from zope.interface import implements
+import re
 
 #TODO Use join for string building or 'msg'.format formatting
 
@@ -32,6 +33,10 @@ class BayeuxMessageSender(object):
         self.msg_id = 0
         self.server = server
         self.receiver = receiver
+        p = '(?:http.*://)?(?P<host>[^:/ ]+).?(?P<port>[0-9]*).*'
+        m = re.search(p,server)
+        self.server_hostname = m.group('host') if m.group('host') else server
+
 
     def connect(self, errback=None):
         """Sends a connect request message to the server
@@ -98,7 +103,7 @@ class BayeuxMessageSender(object):
             d = self.agent.request('POST',
                 self.server,
                 Headers({'Content-Type': ['application/x-www-form-urlencoded'],
-                    'Host': [self.server]}),
+                    'Host': [self.server_hostname]}),
                 BayeuxProducer(str(message)))
 
             def cb(response):
